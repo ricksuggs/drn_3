@@ -25,7 +25,7 @@ body {
   background: #0e0e0b;
   border: 2px solid #2a2618;
   width: 100%;
-  max-width: 1020px;
+  max-width: 1200px;
   padding: 0;
   position: relative;
   box-shadow:
@@ -121,9 +121,17 @@ body {
 .section-tempo { width: 110px; }
 .section-drift { width: 100px; }
 .section-glide { width: 130px; }
-.section-filter { width: 140px; }
-.section-tube { width: 120px; }
-.section-lfo { width: 120px; }
+.section-filter { width: 130px; }
+.section-tube { width: 110px; }
+.section-lfo { width: 110px; }
+.section-tape { width: 160px; }
+
+/* Tape section: pairs of knobs side by side */
+.tape-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
 
 /* Knob component */
 .knob-group {
@@ -244,12 +252,6 @@ body {
   box-shadow: 0 0 4px rgba(180,80,0,0.2);
 }
 
-/* Filter knobs inline */
-.filter-row {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
 
 /* Bottom bar */
 .bottom-bar {
@@ -297,16 +299,6 @@ body {
   box-shadow: 0 0 16px rgba(212,136,32,0.2);
 }
 
-.status-line {
-  font-size: 9px;
-  letter-spacing: 0.25em;
-  color: #6a5028;
-  text-transform: uppercase;
-  min-width: 80px;
-}
-.status-line.active {
-  color: #b08438;
-}
 
 /* Footer strip */
 .footer {
@@ -334,6 +326,57 @@ body {
   pointer-events: none;
 }
 
+/* Step mode toggle switch */
+.step-switch {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.sw-lbl {
+  font-size: 7px;
+  letter-spacing: 0.18em;
+  color: #3a2e14;
+  text-transform: uppercase;
+  user-select: none;
+  transition: color 0.08s;
+}
+
+.sw-track {
+  width: 26px;
+  height: 12px;
+  background: #0c0b08;
+  border: 1px solid #222018;
+  border-radius: 2px;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8), 0 0 0 1px #080806;
+}
+
+.sw-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 8px;
+  background: linear-gradient(to bottom, #2e2a1c, #201e12);
+  border: 1px solid #3a3420;
+  border-radius: 1px;
+  transition: left 0.08s, background 0.08s, border-color 0.08s, box-shadow 0.08s;
+}
+
+.step-switch.adv .sw-thumb {
+  left: 13px;
+  background: linear-gradient(to bottom, #4a3010, #2e1e08);
+  border-color: #a06820;
+  box-shadow: 0 0 5px rgba(210,130,20,0.55);
+}
+
+.step-switch.adv .sw-adv {
+  color: #c08830;
+}
+
 /* Small knob variant */
 .knob-sm .knob {
   width: 44px;
@@ -349,7 +392,6 @@ body {
 @media (max-width: 860px) {
   .section { padding: 18px 10px 14px; gap: 10px; }
   .section-steps { gap: 4px; }
-  .filter-row { gap: 8px; }
 
   .knob { width: 48px; height: 48px; }
   .knob-wrap { width: 48px; height: 48px; }
@@ -364,9 +406,11 @@ body {
   .section-tempo { width: 90px; }
   .section-drift { width: 84px; }
   .section-glide { width: 108px; }
-  .section-filter { width: 110px; }
-  .section-tube { width: 96px; }
-  .section-lfo { width: 96px; }
+  .section-filter { width: 100px; }
+  .section-tube { width: 88px; }
+  .section-lfo { width: 88px; }
+  .section-tape { width: 130px; }
+  .tape-row { gap: 8px; }
 }
 
 /* Mobile: stack sections vertically */
@@ -409,7 +453,8 @@ body {
   .section-filter,
   .section-glide,
   .section-tube,
-  .section-lfo {
+  .section-lfo,
+  .section-tape {
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
@@ -420,8 +465,8 @@ body {
   .section-filter::before,
   .section-glide::before,
   .section-tube::before,
-  .section-lfo::before { left: 16px; transform: none; }
-  .filter-row { gap: 24px; }
+  .section-lfo::before,
+  .section-tape::before { left: 16px; transform: none; }
 
   /* Restore standard knob sizes for mobile stacked layout */
   .knob { width: 52px; height: 52px; }
@@ -465,7 +510,7 @@ body {
         <div class="knob-label">BPM</div>
         <div class="knob-wrap" id="wrap-bpm">
           <svg class="knob-ring" id="ring-bpm" viewBox="0 0 72 72"></svg>
-          <div class="knob" id="knob-bpm" data-param="bpm" data-min="40" data-max="180" data-val="95">
+          <div class="knob" id="knob-bpm" data-param="bpm" data-min="10" data-max="180" data-val="95">
             <div class="knob-indicator" id="ind-bpm"></div>
           </div>
         </div>
@@ -513,6 +558,11 @@ body {
           </div>
           <div class="knob-value" id="val-prob0">100%</div>
         </div>
+        <div class="step-switch" id="switch-0">
+          <span class="sw-lbl sw-hld">HLD</span>
+          <div class="sw-track"><div class="sw-thumb"></div></div>
+          <span class="sw-lbl sw-adv">ADV</span>
+        </div>
       </div>
 
       <div class="step-col" id="step-col-1">
@@ -538,6 +588,11 @@ body {
           </div>
           <div class="knob-value" id="val-prob1">100%</div>
         </div>
+        <div class="step-switch" id="switch-1">
+          <span class="sw-lbl sw-hld">HLD</span>
+          <div class="sw-track"><div class="sw-thumb"></div></div>
+          <span class="sw-lbl sw-adv">ADV</span>
+        </div>
       </div>
 
       <div class="step-col" id="step-col-2">
@@ -562,6 +617,11 @@ body {
             </div>
           </div>
           <div class="knob-value" id="val-prob2">100%</div>
+        </div>
+        <div class="step-switch" id="switch-2">
+          <span class="sw-lbl sw-hld">HLD</span>
+          <div class="sw-track"><div class="sw-thumb"></div></div>
+          <span class="sw-lbl sw-adv">ADV</span>
         </div>
       </div>
 
@@ -593,27 +653,25 @@ body {
 
     <!-- FILTER SECTION -->
     <div class="section section-filter" data-label="FILTER">
-      <div class="filter-row">
-        <div class="knob-group knob-sm">
-          <div class="knob-label">CUTOFF</div>
-          <div class="knob-wrap" id="wrap-cutoff">
-            <svg class="knob-ring" id="ring-cutoff" viewBox="0 0 60 60"></svg>
-            <div class="knob" id="knob-cutoff" data-param="cutoff" data-min="0" data-max="1" data-val="0.42">
-              <div class="knob-indicator" id="ind-cutoff"></div>
-            </div>
+      <div class="knob-group knob-sm">
+        <div class="knob-label">CUTOFF</div>
+        <div class="knob-wrap" id="wrap-cutoff">
+          <svg class="knob-ring" id="ring-cutoff" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-cutoff" data-param="cutoff" data-min="0" data-max="1" data-val="0.42">
+            <div class="knob-indicator" id="ind-cutoff"></div>
           </div>
-          <div class="knob-value" id="val-cutoff">820</div>
         </div>
-        <div class="knob-group knob-sm">
-          <div class="knob-label">RES</div>
-          <div class="knob-wrap" id="wrap-res">
-            <svg class="knob-ring" id="ring-res" viewBox="0 0 60 60"></svg>
-            <div class="knob" id="knob-res" data-param="res" data-min="0" data-max="1" data-val="0.38">
-              <div class="knob-indicator" id="ind-res"></div>
-            </div>
+        <div class="knob-value" id="val-cutoff">820</div>
+      </div>
+      <div class="knob-group knob-sm">
+        <div class="knob-label">RES</div>
+        <div class="knob-wrap" id="wrap-res">
+          <svg class="knob-ring" id="ring-res" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-res" data-param="res" data-min="0" data-max="1" data-val="0.38">
+            <div class="knob-indicator" id="ind-res"></div>
           </div>
-          <div class="knob-value" id="val-res">6.1</div>
         </div>
+        <div class="knob-value" id="val-res">6.1</div>
       </div>
     </div>
 
@@ -665,13 +723,69 @@ body {
       </div>
     </div>
 
+    <!-- TAPE SECTION -->
+    <div class="section section-tape" data-label="TAPE">
+      <div class="tape-row">
+        <div class="knob-group knob-sm">
+          <div class="knob-label">TIME</div>
+          <div class="knob-wrap" id="wrap-tapeTime">
+            <svg class="knob-ring" id="ring-tapeTime" viewBox="0 0 60 60"></svg>
+            <div class="knob" id="knob-tapeTime" data-param="tapeTime" data-min="0.025" data-max="0.8" data-val="0.35">
+              <div class="knob-indicator" id="ind-tapeTime"></div>
+            </div>
+          </div>
+          <div class="knob-value" id="val-tapeTime">350ms</div>
+        </div>
+        <div class="knob-group knob-sm">
+          <div class="knob-label">FEED</div>
+          <div class="knob-wrap" id="wrap-tapeFeedback">
+            <svg class="knob-ring" id="ring-tapeFeedback" viewBox="0 0 60 60"></svg>
+            <div class="knob" id="knob-tapeFeedback" data-param="tapeFeedback" data-min="0" data-max="0.97" data-val="0.55">
+              <div class="knob-indicator" id="ind-tapeFeedback"></div>
+            </div>
+          </div>
+          <div class="knob-value" id="val-tapeFeedback">57%</div>
+        </div>
+      </div>
+      <div class="tape-row">
+        <div class="knob-group knob-sm">
+          <div class="knob-label">WOW</div>
+          <div class="knob-wrap" id="wrap-tapeWow">
+            <svg class="knob-ring" id="ring-tapeWow" viewBox="0 0 60 60"></svg>
+            <div class="knob" id="knob-tapeWow" data-param="tapeWow" data-min="0" data-max="1" data-val="0.2">
+              <div class="knob-indicator" id="ind-tapeWow"></div>
+            </div>
+          </div>
+          <div class="knob-value" id="val-tapeWow">20%</div>
+        </div>
+        <div class="knob-group knob-sm">
+          <div class="knob-label">DARK</div>
+          <div class="knob-wrap" id="wrap-tapeDarken">
+            <svg class="knob-ring" id="ring-tapeDarken" viewBox="0 0 60 60"></svg>
+            <div class="knob" id="knob-tapeDarken" data-param="tapeDarken" data-min="0" data-max="1" data-val="0.5">
+              <div class="knob-indicator" id="ind-tapeDarken"></div>
+            </div>
+          </div>
+          <div class="knob-value" id="val-tapeDarken">50%</div>
+        </div>
+      </div>
+      <div class="knob-group knob-sm">
+        <div class="knob-label">MIX</div>
+        <div class="knob-wrap" id="wrap-tapeMix">
+          <svg class="knob-ring" id="ring-tapeMix" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-tapeMix" data-param="tapeMix" data-min="0" data-max="1" data-val="0.3">
+            <div class="knob-indicator" id="ind-tapeMix"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-tapeMix">30%</div>
+      </div>
+    </div>
+
   </div><!-- /panel -->
 
   <!-- BOTTOM BAR -->
   <div class="bottom-bar">
-    <div class="status-line" id="status-left">STOPPED</div>
     <button class="play-btn" id="play-btn">&#9654;&nbsp;&nbsp;RUN</button>
-    <div class="status-line active" id="status-right" style="text-align:right">STEP&nbsp;—</div>
   </div>
 
   <!-- FOOTER -->
@@ -716,7 +830,15 @@ const params = {
   tubeTone: 0.5,
   prob0: 1,
   prob1: 1,
-  prob2: 1
+  prob2: 1,
+  mode0: 'hold',
+  mode1: 'hold',
+  mode2: 'hold',
+  tapeTime: 0.35,
+  tapeFeedback: 0.55,
+  tapeWow: 0.2,
+  tapeDarken: 0.5,
+  tapeMix: 0.3
 };
 
 let isRunning = false;
@@ -736,6 +858,14 @@ let driftGain = null;
 let filterLFO = null;
 let filterLFOGain = null;
 let toneFilter = null;
+let tapeDelay = null;
+let tapeDryGain = null;
+let tapeWetGain = null;
+let tapeFBGain = null;
+let tapeFBLP = null;
+let tapeFBShaper = null;
+let tapeWowOsc = null;
+let tapeWowGain = null;
 let driftValue = 0;   // random walk position in cents
 let driftTimer = null;
 let glideState = { startFreq: 0, targetFreq: 0, startTime: 0, duration: 0, shape: 0.75 };
@@ -763,6 +893,42 @@ function makeTubeCurve(drive) {
 function toneGainDb() {
   // tone 0→1: -6 dB (cut) to +4 dB (boost), flat at 0.5
   return (params.tubeTone - 0.5) * 20;
+}
+
+// ─────────────────────────────────────────────
+// TAPE DELAY HELPERS
+// ─────────────────────────────────────────────
+function makeTapeFBCurve() {
+  // Gentle symmetric tanh for feedback saturation — soft accumulation,
+  // not aggressive drive. Keeps late repeats compressed and warm.
+  const n = 512;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    curve[i] = Math.tanh(x * 1.8) / Math.tanh(1.8);
+  }
+  return curve;
+}
+
+function tapeDarkenHz() {
+  // 0 → 7000Hz (barely filtering), 1 → 300Hz (heavily muffled)
+  return 7000 * Math.pow(300 / 7000, params.tapeDarken);
+}
+
+function tapeWowDepthSec() {
+  // 0 → 0s, 1 → 0.007s (7ms) of delay time wobble
+  return params.tapeWow * 0.007;
+}
+
+function updateTapeParams() {
+  if (!tapeDelay) return;
+  // Delay time: smooth to avoid pitch clicks on knob movement
+  tapeDelay.delayTime.setTargetAtTime(params.tapeTime, audioCtx.currentTime, 0.06);
+  tapeDryGain.gain.setTargetAtTime(1 - params.tapeMix, audioCtx.currentTime, 0.04);
+  tapeWetGain.gain.setTargetAtTime(params.tapeMix, audioCtx.currentTime, 0.04);
+  tapeFBGain.gain.setTargetAtTime(params.tapeFeedback, audioCtx.currentTime, 0.04);
+  tapeFBLP.frequency.setTargetAtTime(tapeDarkenHz(), audioCtx.currentTime, 0.04);
+  tapeWowGain.gain.setTargetAtTime(tapeWowDepthSec(), audioCtx.currentTime, 0.04);
 }
 
 // ─────────────────────────────────────────────
@@ -814,12 +980,70 @@ function initAudio() {
   masterGain = audioCtx.createGain();
   masterGain.gain.value = 0.72;
 
-  // Graph: osc → oscGain → filter → shaper → toneFilter → masterGain → out
+  // ── Tape delay ────────────────────────────────────────
+  // Core delay line (max 1s)
+  tapeDelay = audioCtx.createDelay(1.0);
+  tapeDelay.delayTime.value = params.tapeTime;
+
+  // Dry/wet gain nodes
+  tapeDryGain = audioCtx.createGain();
+  tapeDryGain.gain.value = 1 - params.tapeMix;
+  tapeWetGain = audioCtx.createGain();
+  tapeWetGain.gain.value = params.tapeMix;
+
+  // Feedback path: LP filter → saturation shaper → feedback gain → back to delay
+  tapeFBLP = audioCtx.createBiquadFilter();
+  tapeFBLP.type = 'lowpass';
+  tapeFBLP.frequency.value = tapeDarkenHz();
+  tapeFBLP.Q.value = 0.5;
+
+  tapeFBShaper = audioCtx.createWaveShaper();
+  tapeFBShaper.curve = makeTapeFBCurve();
+  tapeFBShaper.oversample = '2x';
+
+  tapeFBGain = audioCtx.createGain();
+  tapeFBGain.gain.value = params.tapeFeedback;
+
+  // Wow LFO — free-running, never resets
+  tapeWowOsc = audioCtx.createOscillator();
+  tapeWowOsc.type = 'sine';
+  tapeWowOsc.frequency.value = 0.8;
+  tapeWowGain = audioCtx.createGain();
+  tapeWowGain.gain.value = tapeWowDepthSec();
+  tapeWowOsc.connect(tapeWowGain);
+  tapeWowGain.connect(tapeDelay.delayTime);
+  tapeWowOsc.start();
+
+  // Slowly vary wow speed for organic drift
+  function nudgeWow() {
+    if (!tapeWowOsc) return;
+    tapeWowOsc.frequency.setTargetAtTime(0.4 + Math.random() * 1.4, audioCtx.currentTime, 2.5);
+    setTimeout(nudgeWow, 2500 + Math.random() * 5000);
+  }
+  nudgeWow();
+
+  // ── Graph ─────────────────────────────────────────────
+  // osc → oscGain → filter → shaper → toneFilter → [tape] → masterGain → out
   osc.connect(oscGain);
   oscGain.connect(filter);
   filter.connect(shaper);
   shaper.connect(toneFilter);
-  toneFilter.connect(masterGain);
+
+  // Dry path: toneFilter → tapeDryGain → masterGain
+  toneFilter.connect(tapeDryGain);
+  tapeDryGain.connect(masterGain);
+
+  // Wet path: toneFilter → tapeDelay → tapeWetGain → masterGain
+  toneFilter.connect(tapeDelay);
+  tapeDelay.connect(tapeWetGain);
+  tapeWetGain.connect(masterGain);
+
+  // Feedback loop: tapeDelay → tapeFBLP → tapeFBShaper → tapeFBGain → tapeDelay
+  tapeDelay.connect(tapeFBLP);
+  tapeFBLP.connect(tapeFBShaper);
+  tapeFBShaper.connect(tapeFBGain);
+  tapeFBGain.connect(tapeDelay);
+
   masterGain.connect(audioCtx.destination);
 
   osc.start();
@@ -887,8 +1111,8 @@ function lfoDepthHz() {
 // GLIDE HELPERS
 // ─────────────────────────────────────────────
 function glideTimeSecs() {
-  // 0 → 0.01s, 1 → 1.2s, exponential feel
-  return 0.01 + Math.pow(params.glideTime, 2.2) * 1.19;
+  // 0 → 0.01s, 1 → 6s, exponential feel
+  return 0.01 + Math.pow(params.glideTime, 2.2) * 5.99;
 }
 
 function blendedFreqAtTime(t) {
@@ -961,20 +1185,38 @@ function scheduleStep(step, time) {
   oscGain.gain.setValueAtTime(oscGain.gain.value, time);
   oscGain.gain.linearRampToValueAtTime(0.75, time + 0.006);       // attack
   oscGain.gain.setTargetAtTime(0.65, time + 0.006, 0.08);         // sustain
-  oscGain.gain.setTargetAtTime(0.0, time + dur * 0.88, 0.04);     // tail
+  oscGain.gain.setTargetAtTime(0.0, time + dur - Math.min(dur * 0.12, 0.25), 0.04); // tail
 }
 
 function advanceStep() {
   currentStep = (currentStep + 1) % 3;
 }
 
+// Evaluate one time slot. depth tracks chain length to prevent infinite loops.
+// Max chain visits = NUM_STEPS (3), enforced by depth < NUM_STEPS - 1.
+function scheduleSlot(time, depth) {
+  depth = depth || 0;
+  advanceStep();
+  const step = currentStep;
+  const skipped = Math.random() >= params['prob' + step];
+
+  if (!skipped) {
+    scheduleStep(step, time);
+    updateLEDsAt(step, time, false);
+  } else {
+    updateLEDsAt(step, time, true);
+    if (params['mode' + step] === 'advance' && depth < 2) {
+      // ADVANCE: chain to next step in the same time slot
+      scheduleSlot(time, depth + 1);
+    }
+    // HOLD (or depth exhausted): drone continues on current pitch, nothing scheduled
+  }
+}
+
 function scheduler() {
   if (!isRunning) return;
   while (nextStepTime < audioCtx.currentTime + SCHEDULE_AHEAD) {
-    advanceStep();
-    const skipped = Math.random() >= params['prob' + currentStep];
-    if (!skipped) scheduleStep(currentStep, nextStepTime);
-    updateLEDsAt(currentStep, nextStepTime, skipped);
+    scheduleSlot(nextStepTime);
     nextStepTime += stepDuration();
   }
   schedulerTimer = setTimeout(scheduler, LOOKAHEAD_MS);
@@ -993,7 +1235,6 @@ function updateLEDsAt(step, audioTime, skipped) {
     if (!isRunning) return;
     pendingLEDStep = step;
     updateLEDs(step, skipped);
-    document.getElementById('status-right').textContent = 'STEP ' + ['I','II','III'][step];
   }, delay);
 }
 
@@ -1034,8 +1275,6 @@ function startSequencer() {
 
   document.getElementById('play-btn').textContent = '■  STOP';
   document.getElementById('play-btn').classList.add('running');
-  document.getElementById('status-left').textContent = 'RUNNING';
-  document.getElementById('status-left').classList.add('active');
 }
 
 function stopSequencer() {
@@ -1054,9 +1293,6 @@ function stopSequencer() {
 
   document.getElementById('play-btn').textContent = '▶  RUN';
   document.getElementById('play-btn').classList.remove('running');
-  document.getElementById('status-left').textContent = 'STOPPED';
-  document.getElementById('status-left').classList.remove('active');
-  document.getElementById('status-right').textContent = 'STEP —';
 }
 
 document.getElementById('play-btn').addEventListener('click', () => {
@@ -1122,7 +1358,7 @@ function updateKnobVisual(id, val, min, max) {
 // Draw all tick rings
 function initKnobRings() {
   const largeKnobs = ['bpm','oscDrift','pitch0','pitch1','pitch2'];
-  const allKnobs = [...largeKnobs, 'glideTime','glideShape','cutoff','res','tubeDrive','tubeTone','lfoRate','lfoDepth','prob0','prob1','prob2'];
+  const allKnobs = [...largeKnobs, 'glideTime','glideShape','cutoff','res','tubeDrive','tubeTone','lfoRate','lfoDepth','prob0','prob1','prob2','tapeTime','tapeFeedback','tapeWow','tapeDarken','tapeMix'];
 
   allKnobs.forEach(id => {
     const svg = document.getElementById('ring-' + id);
@@ -1153,6 +1389,11 @@ function formatParam(param, val) {
     const db = toneGainDb();
     return (db >= 0 ? '+' : '') + db.toFixed(1) + 'dB';
   }
+  if (param === 'tapeTime') return Math.round(val * 1000) + 'ms';
+  if (param === 'tapeFeedback') return Math.round(val * 100) + '%';
+  if (param === 'tapeWow') return Math.round(val * 100) + '%';
+  if (param === 'tapeDarken') return Math.round(val * 100) + '%';
+  if (param === 'tapeMix') return Math.round(val * 100) + '%';
   return val.toFixed(2);
 }
 
@@ -1269,6 +1510,9 @@ function applyParam(param, val) {
   if (param === 'tubeTone' && toneFilter) {
     toneFilter.gain.setTargetAtTime(toneGainDb(), audioCtx.currentTime, 0.03);
   }
+  if (['tapeTime','tapeFeedback','tapeWow','tapeDarken','tapeMix'].includes(param)) {
+    updateTapeParams();
+  }
   // oscDrift: driftWalkTick reads params.oscDrift live on each tick — no explicit action needed
   // BPM and pitch changes take effect on next scheduled step automatically
 }
@@ -1316,10 +1560,28 @@ document.addEventListener('keydown', e => {
 });
 
 // ─────────────────────────────────────────────
+// STEP MODE SWITCHES
+// ─────────────────────────────────────────────
+function initSwitches() {
+  for (let i = 0; i < 3; i++) {
+    const sw = document.getElementById('switch-' + i);
+    if (!sw) continue;
+    const toggle = () => {
+      const isAdv = params['mode' + i] === 'advance';
+      params['mode' + i] = isAdv ? 'hold' : 'advance';
+      sw.classList.toggle('adv', !isAdv);
+    };
+    sw.addEventListener('click', toggle);
+    sw.addEventListener('touchend', e => { e.preventDefault(); toggle(); }, { passive: false });
+  }
+}
+
+// ─────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────
 initKnobRings();
 initKnobs();
+initSwitches();
 </script>
 </body>
 </html>
