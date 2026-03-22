@@ -164,7 +164,7 @@ body {
 /* Tape section: pairs of knobs side by side */
 .tape-row {
   display: flex;
-  gap: 10px;
+  gap: 20px;
   justify-content: center;
 }
 
@@ -196,6 +196,7 @@ body {
   position: relative;
   width: 56px;
   height: 56px;
+  margin-top: 4px; /* clear tick ring SVG which overflows 6px above wrap */
 }
 
 .knob {
@@ -233,8 +234,9 @@ body {
 
 .knob-indicator {
   position: absolute;
-  top: 50%;
+  bottom: 50%;
   left: 50%;
+  margin-left: -1.5px;
   width: 3px;
   height: 18px;
   /* Worn tip: bright at base, dulled and slightly chipped toward the end */
@@ -245,7 +247,7 @@ body {
     #8a5410 92%,
     #7a4a0c 100%
   );
-  transform-origin: bottom center;
+  transform-origin: center bottom;
   border-radius: 2px 2px 0 0;
   box-shadow: 0 0 5px rgba(212,136,32,0.38);
   pointer-events: none;
@@ -409,11 +411,14 @@ body {
 .screw::before, .screw::after {
   content: '';
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: rgba(0,0,0,0.55);
   border-radius: 1px;
 }
-.screw::before { width: 5px; height: 1.5px; top: 3.5px; left: 1.5px; }
-.screw::after  { width: 1.5px; height: 5px; top: 1.5px; left: 3.5px; }
+.screw::before { width: 5px; height: 1.5px; }
+.screw::after  { width: 1.5px; height: 5px; }
 
 /* Ghost impression of a sticker removed long ago — just the adhesive outline */
 .sticker-ghost {
@@ -568,6 +573,10 @@ body {
   .section-tube::before,
   .section-lfo::before,
   .section-tape::before { left: 16px; transform: none; }
+
+  /* Flatten tape-row wrappers so all 5 knobs are direct flex children
+     and distribute evenly across the full width */
+  .section-tape .tape-row { display: contents; }
 
   /* Restore standard knob sizes for mobile stacked layout */
   .knob { width: 52px; height: 52px; }
@@ -1430,7 +1439,7 @@ function drawTickRing(svgEl, isLarge) {
   svgEl.setAttribute('viewBox', `0 0 ${size} ${size}`);
 
   let html = '';
-  const tickCount = 11;
+  const tickCount = 10;
   for (let i = 0; i <= tickCount; i++) {
     const t = i / tickCount;
     const angleDeg = KNOB_MIN_ANGLE + t * (KNOB_MAX_ANGLE - KNOB_MIN_ANGLE);
@@ -1451,20 +1460,6 @@ function updateKnobVisual(id, val, min, max) {
   const ind = document.getElementById('ind-' + id);
   if (!ind) return;
   const angle = valToAngle(val, min, max);
-
-  // Indicator: origin at bottom center of the indicator div
-  // The knob indicator is positioned at top:50%, left:50%
-  // We rotate around its bottom center
-  const knobEl = document.getElementById('knob-' + id);
-  if (!knobEl) return;
-  const kw = knobEl.offsetWidth || 56;
-  const kh = knobEl.offsetHeight || 56;
-
-  // Position indicator: centered horizontally, starts at center vertically going up
-  const indH = parseFloat(getComputedStyle(ind).height) || 18;
-  ind.style.left = (kw / 2 - 1.5) + 'px';
-  ind.style.top = (kh / 2 - indH) + 'px';
-  ind.style.transformOrigin = '1.5px ' + indH + 'px';
   ind.style.transform = `rotate(${angle}deg)`;
 }
 
