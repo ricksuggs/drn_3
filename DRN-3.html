@@ -2,16 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>DRN-3 · DRONE SEQUENCER</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; overflow: hidden; }
 
 body {
   background: #080806;
   color: #d4a860;
   font-family: 'Courier New', Courier, monospace;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -203,6 +206,7 @@ body {
   width: 56px;
   height: 56px;
   border-radius: 50%;
+  touch-action: none;
   background:
     /* Finger contact wear — top-centre where thumb rests most often;
        the oil from skin has polished the surface very slightly */
@@ -1736,12 +1740,32 @@ function initPanelTexture() {
 }
 
 // ─────────────────────────────────────────────
+// VIEWPORT FIT
+// ─────────────────────────────────────────────
+function fitMachine() {
+  const machine = document.querySelector('.machine');
+  machine.style.transform = '';
+  machine.style.transformOrigin = '';
+  const mw = machine.offsetWidth;
+  const mh = machine.offsetHeight;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const scale = Math.min(vw / mw, vh / mh, 1);
+  if (scale < 1) {
+    machine.style.transformOrigin = 'top center';
+    machine.style.transform = `scale(${scale})`;
+  }
+}
+window.addEventListener('resize', fitMachine);
+
+// ─────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────
 initKnobRings();
 initKnobs();
 initSwitches();
 initPanelTexture();
+fitMachine();
 </script>
 </body>
 </html>
