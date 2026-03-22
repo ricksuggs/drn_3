@@ -19,6 +19,7 @@ Three steps. Each step has a pitch. They loop. That's the whole idea.
 - **Filter LFO** — free-running sine LFO modulates the filter cutoff additively; runs independently of the sequencer and never resets on stop/start
 - **Tube saturation** — asymmetric tanh WaveShaper with a small class-A bias, producing even harmonics at low drive and progressive compression at high drive; always active, never fully bypassed
 - **Tone shelf** — post-saturation high shelf at 4 kHz; rolls off harshness added by drive or adds presence
+- **Step probability** — each step has an independent trigger probability evaluated fresh on every cycle; skipped steps leave the oscillator droning at its last pitch, maintaining the rhythmic pulse silently; the sequencer clock never stutters
 - **Scheduling** — Web Audio clock lookahead (Chris Wilson's method) for tight, drift-free timing
 
 Default pitches: **D3 → C3 → Bb2** — a descending minor motif in the bass register.
@@ -30,6 +31,7 @@ Default pitches: **D3 → C3 → Bb2** — a descending minor motif in the bass 
 | BPM | 40 – 180 | Sequence tempo (half-note steps) |
 | DRIFT | 0 – 100% | Oscillator random walk depth and speed; 30% default gives subtle but perceptible instability; 100% creates clear microtonal drift |
 | PITCH × 3 | C1 – C4 | Pitch for each step (chromatic, MIDI) |
+| PROB × 3 | 0 – 100% | Per-step trigger probability; evaluated independently on every cycle; skipped steps show a brief dim flicker on the step LED |
 | CUTOFF | 80 Hz – 8 kHz | Filter cutoff frequency (logarithmic) |
 | RES | 0.5 – 20 | Filter resonance / Q |
 | GLIDE TIME | 0.01s – 1.2s | Portamento duration between steps |

@@ -238,6 +238,12 @@ body {
     inset 0 0 4px rgba(255,200,100,0.3);
 }
 
+.led.skipped {
+  background: #3a2008;
+  border-color: #4a2c0a;
+  box-shadow: 0 0 4px rgba(180,80,0,0.2);
+}
+
 /* Filter knobs inline */
 .filter-row {
   display: flex;
@@ -519,6 +525,16 @@ body {
           <div class="knob-value" id="val-pitch0">D3</div>
         </div>
         <div class="led" id="led-0"></div>
+        <div class="knob-group knob-sm">
+          <div class="knob-label">PROB</div>
+          <div class="knob-wrap" id="wrap-prob0">
+            <svg class="knob-ring" id="ring-prob0" viewBox="0 0 60 60"></svg>
+            <div class="knob" id="knob-prob0" data-param="prob0" data-min="0" data-max="1" data-val="1">
+              <div class="knob-indicator" id="ind-prob0"></div>
+            </div>
+          </div>
+          <div class="knob-value" id="val-prob0">100%</div>
+        </div>
       </div>
 
       <div class="step-col" id="step-col-1">
@@ -534,6 +550,16 @@ body {
           <div class="knob-value" id="val-pitch1">C3</div>
         </div>
         <div class="led" id="led-1"></div>
+        <div class="knob-group knob-sm">
+          <div class="knob-label">PROB</div>
+          <div class="knob-wrap" id="wrap-prob1">
+            <svg class="knob-ring" id="ring-prob1" viewBox="0 0 60 60"></svg>
+            <div class="knob" id="knob-prob1" data-param="prob1" data-min="0" data-max="1" data-val="1">
+              <div class="knob-indicator" id="ind-prob1"></div>
+            </div>
+          </div>
+          <div class="knob-value" id="val-prob1">100%</div>
+        </div>
       </div>
 
       <div class="step-col" id="step-col-2">
@@ -549,6 +575,16 @@ body {
           <div class="knob-value" id="val-pitch2">Bb2</div>
         </div>
         <div class="led" id="led-2"></div>
+        <div class="knob-group knob-sm">
+          <div class="knob-label">PROB</div>
+          <div class="knob-wrap" id="wrap-prob2">
+            <svg class="knob-ring" id="ring-prob2" viewBox="0 0 60 60"></svg>
+            <div class="knob" id="knob-prob2" data-param="prob2" data-min="0" data-max="1" data-val="1">
+              <div class="knob-indicator" id="ind-prob2"></div>
+            </div>
+          </div>
+          <div class="knob-value" id="val-prob2">100%</div>
+        </div>
       </div>
 
     </div>
@@ -699,7 +735,10 @@ const params = {
   lfoRate: 0.3,
   lfoDepth: 0.15,
   tubeDrive: 0.22,
-  tubeTone: 0.5
+  tubeTone: 0.5,
+  prob0: 1,
+  prob1: 1,
+  prob2: 1
 };
 
 let isRunning = false;
@@ -955,8 +994,9 @@ function scheduler() {
   if (!isRunning) return;
   while (nextStepTime < audioCtx.currentTime + SCHEDULE_AHEAD) {
     advanceStep();
-    scheduleStep(currentStep, nextStepTime);
-    updateLEDsAt(currentStep, nextStepTime);
+    const skipped = Math.random() >= params['prob' + currentStep];
+    if (!skipped) scheduleStep(currentStep, nextStepTime);
+    updateLEDsAt(currentStep, nextStepTime, skipped);
     nextStepTime += stepDuration();
   }
   schedulerTimer = setTimeout(scheduler, LOOKAHEAD_MS);
@@ -968,22 +1008,30 @@ function scheduler() {
 // ─────────────────────────────────────────────
 let pendingLEDStep = -1;
 
-function updateLEDsAt(step, audioTime) {
+function updateLEDsAt(step, audioTime, skipped) {
   const now = audioCtx.currentTime;
   const delay = Math.max(0, (audioTime - now) * 1000);
   setTimeout(() => {
     if (!isRunning) return;
     pendingLEDStep = step;
-    updateLEDs(step);
+    updateLEDs(step, skipped);
     document.getElementById('status-right').textContent = 'STEP ' + ['I','II','III'][step];
   }, delay);
 }
 
-function updateLEDs(activeStep) {
+function updateLEDs(activeStep, skipped) {
   for (let i = 0; i < 3; i++) {
     const led = document.getElementById('led-' + i);
-    if (led) {
-      led.classList.toggle('active', i === activeStep);
+    if (!led) continue;
+    led.classList.remove('active', 'skipped');
+    if (i === activeStep) {
+      if (skipped) {
+        // Brief dim flicker — class removed after 100ms so it reads as a dropout
+        led.classList.add('skipped');
+        setTimeout(() => led.classList.remove('skipped'), 100);
+      } else {
+        led.classList.add('active');
+      }
     }
   }
 }
@@ -1096,7 +1144,7 @@ function updateKnobVisual(id, val, min, max) {
 // Draw all tick rings
 function initKnobRings() {
   const largeKnobs = ['bpm','oscDrift','pitch0','pitch1','pitch2'];
-  const allKnobs = [...largeKnobs, 'glideTime','glideShape','cutoff','res','tubeDrive','tubeTone','lfoRate','lfoDepth'];
+  const allKnobs = [...largeKnobs, 'glideTime','glideShape','cutoff','res','tubeDrive','tubeTone','lfoRate','lfoDepth','prob0','prob1','prob2'];
 
   allKnobs.forEach(id => {
     const svg = document.getElementById('ring-' + id);
@@ -1119,6 +1167,7 @@ function formatParam(param, val) {
     return Math.round(val * 100) + '%';
   }
   if (param === 'oscDrift') return Math.round(val * 100) + '%';
+  if (param.startsWith('prob')) return Math.round(val * 100) + '%';
   if (param === 'lfoRate') return val.toFixed(2) + 'Hz';
   if (param === 'lfoDepth') return Math.round(val * 100) + '%';
   if (param === 'tubeDrive') return Math.round(val * 100) + '%';
