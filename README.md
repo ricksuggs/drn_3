@@ -2,6 +2,8 @@
 
 A 3-step analog drone sequencer running entirely in the browser. No frameworks, no build step — one HTML file, open and play.
 
+**[▶ Launch DRN-3](https://ricksuggs.github.io/drn_3/DRN-3.html)**
+
 ---
 
 ## What it is
