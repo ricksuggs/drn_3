@@ -120,6 +120,7 @@ body {
 
 .section-tempo { width: 130px; }
 .section-filter { width: 160px; }
+.section-tube { width: 150px; }
 .section-lfo { width: 150px; }
 
 /* Knob component */
@@ -396,6 +397,16 @@ body {
   .section-filter::before { left: 16px; transform: none; }
   .filter-row { gap: 16px; }
 
+  /* Tube row */
+  .section-tube {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 20px 12px;
+  }
+  .section-tube::before { left: 16px; transform: none; }
+
   /* LFO row */
   .section-lfo {
     width: 100%;
@@ -543,6 +554,30 @@ body {
       </div>
     </div>
 
+    <!-- TUBE SECTION -->
+    <div class="section section-tube" data-label="TUBE">
+      <div class="knob-group knob-sm">
+        <div class="knob-label">DRIVE</div>
+        <div class="knob-wrap" id="wrap-tubeDrive">
+          <svg class="knob-ring" id="ring-tubeDrive" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-tubeDrive" data-param="tubeDrive" data-min="0" data-max="1" data-val="0.22">
+            <div class="knob-indicator" id="ind-tubeDrive"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-tubeDrive">22%</div>
+      </div>
+      <div class="knob-group knob-sm">
+        <div class="knob-label">TONE</div>
+        <div class="knob-wrap" id="wrap-tubeTone">
+          <svg class="knob-ring" id="ring-tubeTone" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-tubeTone" data-param="tubeTone" data-min="0" data-max="1" data-val="0.5">
+            <div class="knob-indicator" id="ind-tubeTone"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-tubeTone">0.0dB</div>
+      </div>
+    </div>
+
     <!-- LFO SECTION -->
     <div class="section section-lfo" data-label="LFO">
       <div class="knob-group knob-sm">
@@ -611,7 +646,9 @@ const params = {
   res: 0.38,
   glide: 0.55,
   lfoRate: 0.3,
-  lfoDepth: 0.15
+  lfoDepth: 0.15,
+  tubeDrive: 0.22,
+  tubeTone: 0.5
 };
 
 let isRunning = false;
@@ -630,19 +667,31 @@ let driftLFO = null;
 let driftGain = null;
 let filterLFO = null;
 let filterLFOGain = null;
+let toneFilter = null;
 
 // ─────────────────────────────────────────────
-// SOFT CLIP CURVE
+// TUBE SATURATION CURVE
 // ─────────────────────────────────────────────
-function makeSoftClipCurve() {
-  const n = 512;
+function makeTubeCurve(drive) {
+  const n = 1024;
   const curve = new Float32Array(n);
+  // drive 0→1 maps to saturation amount 1.5→25 (exponential, always slightly warm)
+  const k = 1.5 + Math.pow(drive, 1.5) * 23.5;
+  // Small positive DC bias for even-harmonic asymmetry — real class-A tubes
+  // don't clip symmetrically. Scales with drive so it's imperceptible at rest.
+  const bias = drive * 0.09;
+  // Peak at (1 + bias) normalises the curve so output never exceeds ±1
+  const norm = Math.tanh((1 + bias) * k);
   for (let i = 0; i < n; i++) {
-    const x = (i * 2) / n - 1;
-    // Tube-style soft knee
-    curve[i] = (Math.tanh(x * 2.2) / Math.tanh(2.2)) * 0.9;
+    const x = (i * 2) / n - 1; // -1 to +1
+    curve[i] = Math.tanh((x + bias) * k) / norm;
   }
   return curve;
+}
+
+function toneGainDb() {
+  // tone 0→1: -6 dB (cut) to +4 dB (boost), flat at 0.5
+  return (params.tubeTone - 0.5) * 20;
 }
 
 // ─────────────────────────────────────────────
@@ -697,20 +746,27 @@ function initAudio() {
   filterLFOGain.connect(filter.frequency); // additive modulation on top of base cutoff
   filterLFO.start();
 
-  // WaveShaper for soft clipping
+  // Tube saturation WaveShaper — drive-controlled asymmetric tanh curve
   shaper = audioCtx.createWaveShaper();
-  shaper.curve = makeSoftClipCurve();
-  shaper.oversample = '2x';
+  shaper.curve = makeTubeCurve(params.tubeDrive);
+  shaper.oversample = '4x';
+
+  // Post-saturation tone shelf — rolls off harshness or adds air
+  toneFilter = audioCtx.createBiquadFilter();
+  toneFilter.type = 'highshelf';
+  toneFilter.frequency.value = 4000;
+  toneFilter.gain.value = toneGainDb();
 
   // Master gain
   masterGain = audioCtx.createGain();
   masterGain.gain.value = 0.72;
 
-  // Graph: osc → oscGain → filter → shaper → masterGain → out
+  // Graph: osc → oscGain → filter → shaper → toneFilter → masterGain → out
   osc.connect(oscGain);
   oscGain.connect(filter);
   filter.connect(shaper);
-  shaper.connect(masterGain);
+  shaper.connect(toneFilter);
+  toneFilter.connect(masterGain);
   masterGain.connect(audioCtx.destination);
 
   osc.start();
@@ -935,7 +991,7 @@ function updateKnobVisual(id, val, min, max) {
 // Draw all tick rings
 function initKnobRings() {
   const largeKnobs = ['bpm','pitch0','pitch1','pitch2'];
-  const allKnobs = [...largeKnobs, 'cutoff','res','glide','lfoRate','lfoDepth'];
+  const allKnobs = [...largeKnobs, 'cutoff','res','glide','tubeDrive','tubeTone','lfoRate','lfoDepth'];
 
   allKnobs.forEach(id => {
     const svg = document.getElementById('ring-' + id);
@@ -954,6 +1010,11 @@ function formatParam(param, val) {
   if (param === 'glide') return glideTime().toFixed(2) + 's';
   if (param === 'lfoRate') return val.toFixed(2) + 'Hz';
   if (param === 'lfoDepth') return Math.round(val * 100) + '%';
+  if (param === 'tubeDrive') return Math.round(val * 100) + '%';
+  if (param === 'tubeTone') {
+    const db = toneGainDb();
+    return (db >= 0 ? '+' : '') + db.toFixed(1) + 'dB';
+  }
   return val.toFixed(2);
 }
 
@@ -1062,6 +1123,13 @@ function applyParam(param, val) {
   }
   if (param === 'lfoDepth' && filterLFOGain) {
     filterLFOGain.gain.setTargetAtTime(lfoDepthHz(), audioCtx.currentTime, 0.05);
+  }
+  if (param === 'tubeDrive' && shaper) {
+    // Regenerate the curve — must assign a new Float32Array
+    shaper.curve = makeTubeCurve(val);
+  }
+  if (param === 'tubeTone' && toneFilter) {
+    toneFilter.gain.setTargetAtTime(toneGainDb(), audioCtx.currentTime, 0.03);
   }
   // BPM and pitch changes take effect on next scheduled step automatically
 }

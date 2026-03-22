@@ -17,7 +17,8 @@ Three steps. Each step has a pitch. They loop. That's the whole idea.
 - **Drift** — a very slow LFO (~0.07 Hz) modulates the oscillator's detune by ±4.5 cents, with its own frequency randomized over time so the wander never repeats
 - **Filter** — resonant lowpass, cutoff mapped logarithmically from 80 Hz to 8 kHz
 - **Filter LFO** — free-running sine LFO modulates the filter cutoff additively; runs independently of the sequencer and never resets on stop/start
-- **Waveshaper** — tanh soft-clipping curve for tube warmth on the output
+- **Tube saturation** — asymmetric tanh WaveShaper with a small class-A bias, producing even harmonics at low drive and progressive compression at high drive; always active, never fully bypassed
+- **Tone shelf** — post-saturation high shelf at 4 kHz; rolls off harshness added by drive or adds presence
 - **Scheduling** — Web Audio clock lookahead (Chris Wilson's method) for tight, drift-free timing
 
 Default pitches: **D3 → C3 → Bb2** — a descending minor motif in the bass register.
@@ -31,6 +32,8 @@ Default pitches: **D3 → C3 → Bb2** — a descending minor motif in the bass 
 | CUTOFF | 80 Hz – 8 kHz | Filter cutoff frequency (logarithmic) |
 | RES | 0.5 – 20 | Filter resonance / Q |
 | GLIDE | 0.01s – 1.2s | Portamento time (exponential feel) |
+| DRIVE | 0 – 100% | Tube saturation amount; exponential curve, always slightly warm at minimum |
+| TONE | ±10 dB | High shelf post-saturation; centre position is flat |
 | LFO RATE | 0.1 – 5 Hz | Filter LFO speed; default 0.30 Hz (very slow breath) |
 | LFO DEPTH | 0 – 100% | Filter LFO intensity; depth is exponentially scaled so low values stay subtle |
 
