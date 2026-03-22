@@ -120,6 +120,7 @@ body {
 
 .section-tempo { width: 130px; }
 .section-filter { width: 160px; }
+.section-lfo { width: 150px; }
 
 /* Knob component */
 .knob-group {
@@ -395,6 +396,16 @@ body {
   .section-filter::before { left: 16px; transform: none; }
   .filter-row { gap: 16px; }
 
+  /* LFO row */
+  .section-lfo {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 20px 12px;
+  }
+  .section-lfo::before { left: 16px; transform: none; }
+
   /* Slightly smaller knobs on small phones */
   .knob { width: 52px; height: 52px; }
   .knob-wrap { width: 52px; height: 52px; }
@@ -532,6 +543,30 @@ body {
       </div>
     </div>
 
+    <!-- LFO SECTION -->
+    <div class="section section-lfo" data-label="LFO">
+      <div class="knob-group knob-sm">
+        <div class="knob-label">RATE</div>
+        <div class="knob-wrap" id="wrap-lfoRate">
+          <svg class="knob-ring" id="ring-lfoRate" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-lfoRate" data-param="lfoRate" data-min="0.1" data-max="5" data-val="0.3">
+            <div class="knob-indicator" id="ind-lfoRate"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-lfoRate">0.30</div>
+      </div>
+      <div class="knob-group knob-sm">
+        <div class="knob-label">DEPTH</div>
+        <div class="knob-wrap" id="wrap-lfoDepth">
+          <svg class="knob-ring" id="ring-lfoDepth" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-lfoDepth" data-param="lfoDepth" data-min="0" data-max="1" data-val="0.15">
+            <div class="knob-indicator" id="ind-lfoDepth"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-lfoDepth">15%</div>
+      </div>
+    </div>
+
   </div><!-- /panel -->
 
   <!-- BOTTOM BAR -->
@@ -574,7 +609,9 @@ const params = {
   pitch2: 46,  // Bb2
   cutoff: 0.42,
   res: 0.38,
-  glide: 0.55
+  glide: 0.55,
+  lfoRate: 0.3,
+  lfoDepth: 0.15
 };
 
 let isRunning = false;
@@ -591,6 +628,8 @@ let shaper = null;
 let masterGain = null;
 let driftLFO = null;
 let driftGain = null;
+let filterLFO = null;
+let filterLFOGain = null;
 
 // ─────────────────────────────────────────────
 // SOFT CLIP CURVE
@@ -648,6 +687,16 @@ function initAudio() {
   filter.type = 'lowpass';
   updateFilterParams();
 
+  // Filter LFO — free-running sine, modulates filter cutoff
+  filterLFO = audioCtx.createOscillator();
+  filterLFO.type = 'sine';
+  filterLFO.frequency.value = params.lfoRate;
+  filterLFOGain = audioCtx.createGain();
+  filterLFOGain.gain.value = lfoDepthHz();
+  filterLFO.connect(filterLFOGain);
+  filterLFOGain.connect(filter.frequency); // additive modulation on top of base cutoff
+  filterLFO.start();
+
   // WaveShaper for soft clipping
   shaper = audioCtx.createWaveShaper();
   shaper.curve = makeSoftClipCurve();
@@ -684,6 +733,16 @@ function updateFilterParams() {
   if (!filter) return;
   filter.frequency.setTargetAtTime(filterCutoffHz(), audioCtx.currentTime, 0.02);
   filter.Q.setTargetAtTime(filterQ(), audioCtx.currentTime, 0.02);
+}
+
+// ─────────────────────────────────────────────
+// LFO HELPERS
+// ─────────────────────────────────────────────
+function lfoDepthHz() {
+  // Depth 0→1 maps to ±0–1200 Hz additive modulation on filter.frequency.
+  // Exponential curve so small values feel subtle, large values feel dramatic
+  // but never harsh — the filter clamps internally at 0.
+  return Math.pow(params.lfoDepth, 1.8) * 1200;
 }
 
 // ─────────────────────────────────────────────
@@ -876,7 +935,7 @@ function updateKnobVisual(id, val, min, max) {
 // Draw all tick rings
 function initKnobRings() {
   const largeKnobs = ['bpm','pitch0','pitch1','pitch2'];
-  const allKnobs = [...largeKnobs, 'cutoff','res','glide'];
+  const allKnobs = [...largeKnobs, 'cutoff','res','glide','lfoRate','lfoDepth'];
 
   allKnobs.forEach(id => {
     const svg = document.getElementById('ring-' + id);
@@ -893,6 +952,8 @@ function formatParam(param, val) {
   if (param === 'cutoff') return Math.round(filterCutoffHz()) + 'Hz';
   if (param === 'res') return filterQ().toFixed(1);
   if (param === 'glide') return glideTime().toFixed(2) + 's';
+  if (param === 'lfoRate') return val.toFixed(2) + 'Hz';
+  if (param === 'lfoDepth') return Math.round(val * 100) + '%';
   return val.toFixed(2);
 }
 
@@ -995,6 +1056,12 @@ function applyParam(param, val) {
   }
   if (param === 'glide') {
     updateParamDisplay('glide', val);
+  }
+  if (param === 'lfoRate' && filterLFO) {
+    filterLFO.frequency.setTargetAtTime(val, audioCtx.currentTime, 0.1);
+  }
+  if (param === 'lfoDepth' && filterLFOGain) {
+    filterLFOGain.gain.setTargetAtTime(lfoDepthHz(), audioCtx.currentTime, 0.05);
   }
   // BPM and pitch changes take effect on next scheduled step automatically
 }
