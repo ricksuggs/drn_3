@@ -13,7 +13,7 @@ Three steps. Each step has a pitch. They loop. That's the whole idea.
 ## Sound
 
 - **Oscillator** — sawtooth wave, the primary voice
-- **Portamento** — exponential glide between steps; weighted and gravitational, not snappy
+- **Portamento** — continuously blendable glide between steps; linear shape moves pitch at a constant rate (mechanical, Kraftwerk); exponential shape closes distance quickly then settles (gravitational, analog); midpoint is a hybrid that feels neither fully robotic nor fully organic
 - **Drift** — a random walk algorithm wanders the oscillator pitch continuously and unpredictably; each tick takes a small random step with gentle center attraction to prevent permanent runaway; smoothed with a long time constant so movement feels geological rather than nervous; never resets on stop/start
 - **Filter** — resonant lowpass, cutoff mapped logarithmically from 80 Hz to 8 kHz
 - **Filter LFO** — free-running sine LFO modulates the filter cutoff additively; runs independently of the sequencer and never resets on stop/start
@@ -32,7 +32,8 @@ Default pitches: **D3 → C3 → Bb2** — a descending minor motif in the bass 
 | PITCH × 3 | C1 – C4 | Pitch for each step (chromatic, MIDI) |
 | CUTOFF | 80 Hz – 8 kHz | Filter cutoff frequency (logarithmic) |
 | RES | 0.5 – 20 | Filter resonance / Q |
-| GLIDE | 0.01s – 1.2s | Portamento time (exponential feel) |
+| GLIDE TIME | 0.01s – 1.2s | Portamento duration between steps |
+| GLIDE SHAPE | LIN – EXP | Blend from linear (constant rate, mechanical) to exponential (gravitational, organic); midpoint combines both characters |
 | DRIVE | 0 – 100% | Tube saturation amount; exponential curve, always slightly warm at minimum |
 | TONE | ±10 dB | High shelf post-saturation; centre position is flat |
 | LFO RATE | 0.1 – 5 Hz | Filter LFO speed; default 0.30 Hz (very slow breath) |

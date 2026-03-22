@@ -120,6 +120,7 @@ body {
 
 .section-tempo { width: 130px; }
 .section-drift { width: 110px; }
+.section-glide { width: 150px; }
 .section-filter { width: 160px; }
 .section-tube { width: 150px; }
 .section-lfo { width: 150px; }
@@ -398,6 +399,16 @@ body {
   .section-filter::before { left: 16px; transform: none; }
   .filter-row { gap: 16px; }
 
+  /* Glide row */
+  .section-glide {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 20px 12px;
+  }
+  .section-glide::before { left: 16px; transform: none; }
+
   /* Drift row */
   .section-drift {
     width: 100%;
@@ -542,6 +553,30 @@ body {
 
     </div>
 
+    <!-- GLIDE SECTION -->
+    <div class="section section-glide" data-label="GLIDE">
+      <div class="knob-group knob-sm">
+        <div class="knob-label">TIME</div>
+        <div class="knob-wrap" id="wrap-glideTime">
+          <svg class="knob-ring" id="ring-glideTime" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-glideTime" data-param="glideTime" data-min="0" data-max="1" data-val="0.55">
+            <div class="knob-indicator" id="ind-glideTime"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-glideTime">0.33s</div>
+      </div>
+      <div class="knob-group knob-sm">
+        <div class="knob-label">SHAPE</div>
+        <div class="knob-wrap" id="wrap-glideShape">
+          <svg class="knob-ring" id="ring-glideShape" viewBox="0 0 60 60"></svg>
+          <div class="knob" id="knob-glideShape" data-param="glideShape" data-min="0" data-max="1" data-val="0.75">
+            <div class="knob-indicator" id="ind-glideShape"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-glideShape">75%</div>
+      </div>
+    </div>
+
     <!-- FILTER SECTION -->
     <div class="section section-filter" data-label="FILTER">
       <div class="filter-row">
@@ -565,17 +600,6 @@ body {
           </div>
           <div class="knob-value" id="val-res">6.1</div>
         </div>
-      </div>
-      <!-- Glide knob -->
-      <div class="knob-group knob-sm" style="margin-top:4px">
-        <div class="knob-label">GLIDE</div>
-        <div class="knob-wrap" id="wrap-glide">
-          <svg class="knob-ring" id="ring-glide" viewBox="0 0 60 60"></svg>
-          <div class="knob" id="knob-glide" data-param="glide" data-min="0" data-max="1" data-val="0.55">
-            <div class="knob-indicator" id="ind-glide"></div>
-          </div>
-        </div>
-        <div class="knob-value" id="val-glide">0.55</div>
       </div>
     </div>
 
@@ -669,7 +693,8 @@ const params = {
   pitch2: 46,  // Bb2
   cutoff: 0.42,
   res: 0.38,
-  glide: 0.55,
+  glideTime: 0.55,
+  glideShape: 0.75,
   oscDrift: 0.3,
   lfoRate: 0.3,
   lfoDepth: 0.15,
@@ -696,6 +721,7 @@ let filterLFOGain = null;
 let toneFilter = null;
 let driftValue = 0;   // random walk position in cents
 let driftTimer = null;
+let glideState = { startFreq: 0, targetFreq: 0, startTime: 0, duration: 0, shape: 0.75 };
 
 // ─────────────────────────────────────────────
 // TUBE SATURATION CURVE
@@ -841,11 +867,22 @@ function lfoDepthHz() {
 }
 
 // ─────────────────────────────────────────────
-// GLIDE TIME
+// GLIDE HELPERS
 // ─────────────────────────────────────────────
-function glideTime() {
+function glideTimeSecs() {
   // 0 → 0.01s, 1 → 1.2s, exponential feel
-  return 0.01 + Math.pow(params.glide, 2.2) * 1.19;
+  return 0.01 + Math.pow(params.glideTime, 2.2) * 1.19;
+}
+
+function blendedFreqAtTime(t) {
+  // Compute the in-flight blended frequency at audio time t using the
+  // stored parameters from the most recently scheduled glide.
+  const { startFreq, targetFreq, startTime, duration, shape } = glideState;
+  if (duration <= 0 || startFreq <= 0) return targetFreq || 20;
+  const u = Math.min(Math.max((t - startTime) / duration, 0), 1);
+  const fLin = startFreq + (targetFreq - startFreq) * u;
+  const fExp = startFreq * Math.pow(Math.max(targetFreq / startFreq, 1e-9), u);
+  return Math.max(fLin * (1 - shape) + fExp * shape, 20);
 }
 
 // ─────────────────────────────────────────────
@@ -861,18 +898,46 @@ function stepDuration() {
 }
 
 function scheduleStep(step, time) {
-  const pitchKey = 'pitch' + step;
-  const midiNote = Math.round(params[pitchKey]);
-  const freq = midiToHz(midiNote);
-  const gt = glideTime();
+  const midiNote = Math.round(params['pitch' + step]);
+  const targetFreq = Math.max(midiToHz(midiNote), 20);
+  const gt = glideTimeSecs();
+  const shape = params.glideShape;
   const dur = stepDuration();
+  const glideDur = Math.min(gt, dur * 0.8);
 
-  // Portamento: exponential ramp to new frequency
-  // Need at least a tiny guard so exponentialRamp doesn't blow up
-  const safeFreq = Math.max(freq, 20);
+  // Start frequency: analytically computed from the in-flight glide position
+  // at `time`, so glides that interrupt a previous glide begin from the
+  // correct mid-ramp pitch rather than the previous step's target.
+  const startFreq = glideState.startFreq > 0
+    ? blendedFreqAtTime(time)
+    : targetFreq;
+
   osc.frequency.cancelScheduledValues(time);
-  osc.frequency.setValueAtTime(osc.frequency.value || safeFreq, time);
-  osc.frequency.exponentialRampToValueAtTime(safeFreq, time + Math.min(gt, dur * 0.8));
+  osc.frequency.setValueAtTime(startFreq, time);
+
+  if (shape < 0.01) {
+    // Pure linear — native ramp, sample-accurate
+    osc.frequency.linearRampToValueAtTime(targetFreq, time + glideDur);
+  } else if (shape > 0.99) {
+    // Pure exponential — native ramp, sample-accurate
+    osc.frequency.exponentialRampToValueAtTime(targetFreq, time + glideDur);
+  } else {
+    // Blended — schedule 64 interpolated setValueAtTime points.
+    // Fine enough to be imperceptible at all bass frequencies used here.
+    const N = 64;
+    for (let i = 1; i <= N; i++) {
+      const u = i / N;
+      const fLin = startFreq + (targetFreq - startFreq) * u;
+      const fExp = startFreq * Math.pow(targetFreq / startFreq, u);
+      osc.frequency.setValueAtTime(
+        Math.max(fLin * (1 - shape) + fExp * shape, 20),
+        time + u * glideDur
+      );
+    }
+  }
+
+  // Store glide state so the next step can compute its in-flight start pitch
+  glideState = { startFreq, targetFreq, startTime: time, duration: glideDur, shape };
 
   // Amplitude: quick attack, sustain, slight tail off before next step
   oscGain.gain.cancelScheduledValues(time);
@@ -952,6 +1017,7 @@ function stopSequencer() {
   clearTimeout(schedulerTimer);
   clearLEDs();
   currentStep = -1;
+  glideState = { startFreq: 0, targetFreq: 0, startTime: 0, duration: 0, shape: params.glideShape };
 
   if (audioCtx) {
     // Fade out
@@ -1030,7 +1096,7 @@ function updateKnobVisual(id, val, min, max) {
 // Draw all tick rings
 function initKnobRings() {
   const largeKnobs = ['bpm','oscDrift','pitch0','pitch1','pitch2'];
-  const allKnobs = [...largeKnobs, 'cutoff','res','glide','tubeDrive','tubeTone','lfoRate','lfoDepth'];
+  const allKnobs = [...largeKnobs, 'glideTime','glideShape','cutoff','res','tubeDrive','tubeTone','lfoRate','lfoDepth'];
 
   allKnobs.forEach(id => {
     const svg = document.getElementById('ring-' + id);
@@ -1046,7 +1112,12 @@ function formatParam(param, val) {
   if (param.startsWith('pitch')) return midiToName(Math.round(val));
   if (param === 'cutoff') return Math.round(filterCutoffHz()) + 'Hz';
   if (param === 'res') return filterQ().toFixed(1);
-  if (param === 'glide') return glideTime().toFixed(2) + 's';
+  if (param === 'glideTime') return glideTimeSecs().toFixed(2) + 's';
+  if (param === 'glideShape') {
+    if (val < 0.02) return 'LIN';
+    if (val > 0.98) return 'EXP';
+    return Math.round(val * 100) + '%';
+  }
   if (param === 'oscDrift') return Math.round(val * 100) + '%';
   if (param === 'lfoRate') return val.toFixed(2) + 'Hz';
   if (param === 'lfoDepth') return Math.round(val * 100) + '%';
