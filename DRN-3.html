@@ -22,7 +22,25 @@ body {
 }
 
 .machine {
-  background: #0e0e0b;
+  background:
+    /* Tonal variation — slightly warmer centre-left, cooler top-right,
+       as if the anodizing cured unevenly and the finish aged at different rates */
+    radial-gradient(ellipse at 20% 55%, rgba(38,24,8,0.22) 0%, transparent 60%),
+    radial-gradient(ellipse at 82% 18%, rgba(6,10,18,0.16) 0%, transparent 52%),
+    radial-gradient(ellipse at 55% 90%, rgba(20,12,4,0.12) 0%, transparent 45%),
+    /* Vignette — edges slightly darker, centre slightly more exposed */
+    radial-gradient(ellipse at 50% 48%, transparent 20%, rgba(0,0,0,0.26) 100%),
+    /* Horizontal manufacturing banding — extremely subtle, barely perceptible */
+    repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 43px,
+      rgba(0,0,0,0.016) 43px,
+      rgba(255,255,255,0.004) 45px,
+      transparent 45px
+    ),
+    /* Base panel colour */
+    #0e0e0b;
   border: 2px solid #2a2618;
   width: 100%;
   max-width: 1200px;
@@ -59,7 +77,12 @@ body {
   color: #d48820;
   font-family: 'Courier New', monospace;
   text-transform: uppercase;
-  text-shadow: 0 0 18px rgba(212,136,32,0.35);
+  text-shadow:
+    0 0 18px rgba(212,136,32,0.35),
+    /* Slight uneven ink density — stamp impression heavier on one side */
+    1px 0 0 rgba(0,0,0,0.15),
+    -0.5px 0 0 rgba(255,200,100,0.06);
+  opacity: 0.93;
 }
 
 .model-sub {
@@ -82,6 +105,14 @@ body {
   display: flex;
   align-items: stretch;
   border-bottom: 2px solid #2a2618;
+  /* Very slight warm-to-cool tonal drift left-to-right, as if the left
+     end (near the power source) has seen slightly more heat over the years */
+  background: linear-gradient(90deg,
+    rgba(12,8,2,0.18) 0%,
+    transparent 35%,
+    transparent 70%,
+    rgba(4,6,10,0.10) 100%
+  );
 }
 
 /* Section dividers */
@@ -107,6 +138,10 @@ body {
   transform: translateX(-50%);
   white-space: nowrap;
   text-transform: uppercase;
+  /* Worn silk-screen: slightly faded from factory, grime settled into the
+     engraving — darker shadow reads as accumulated dust in the recess */
+  opacity: 0.82;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.6), 0 -1px 0 rgba(0,0,0,0.3);
 }
 
 /* Steps section fills remaining width */
@@ -168,12 +203,18 @@ body {
   height: 56px;
   border-radius: 50%;
   background:
+    /* Finger contact wear — top-centre where thumb rests most often;
+       the oil from skin has polished the surface very slightly */
+    radial-gradient(ellipse at 50% 8%, rgba(255,220,140,0.08) 0%, transparent 58%),
+    /* Existing form gradient */
     radial-gradient(ellipse at 35% 30%, #2a2618 0%, #181610 60%, #100e08 100%);
   border: 2px solid #3a3220;
   cursor: ns-resize;
   position: relative;
   box-shadow:
     0 2px 8px rgba(0,0,0,0.6),
+    /* Circular scuff ring from years of turning — very faint inner halo */
+    inset 0 0 0 1px rgba(255,200,100,0.03),
     inset 0 1px 0 rgba(255,255,255,0.04),
     0 0 0 1px #0a0a08;
   transition: box-shadow 0.1s;
@@ -196,10 +237,17 @@ body {
   left: 50%;
   width: 3px;
   height: 18px;
-  background: #d48820;
+  /* Worn tip: bright at base, dulled and slightly chipped toward the end */
+  background: linear-gradient(to top,
+    #d48820 0%,
+    #d48820 52%,
+    #a86a18 76%,
+    #8a5410 92%,
+    #7a4a0c 100%
+  );
   transform-origin: bottom center;
   border-radius: 2px 2px 0 0;
-  box-shadow: 0 0 6px rgba(212,136,32,0.5);
+  box-shadow: 0 0 5px rgba(212,136,32,0.38);
   pointer-events: none;
 }
 
@@ -231,8 +279,10 @@ body {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #1c1200;
-  border: 1px solid #2a1c08;
+  /* Aged lens: slightly warm yellowing of the diffuser material after
+     decades of heat cycling and UV exposure */
+  background: radial-gradient(circle at 42% 36%, #201a04, #130e00);
+  border: 1px solid #261a06;
   position: relative;
   transition: background 0.05s, box-shadow 0.05s;
 }
@@ -240,10 +290,13 @@ body {
 .led.active {
   background: #ff8800;
   border-color: #d47010;
+  /* Uneven bloom — slightly off-centre, as if the LED chip inside has shifted
+     or the diffuser lens is worn asymmetrically */
   box-shadow:
-    0 0 8px rgba(255,130,0,0.7),
-    0 0 20px rgba(255,100,0,0.4),
-    inset 0 0 4px rgba(255,200,100,0.3);
+    -1px -1px 7px rgba(255,140,0,0.65),
+    1px 2px 14px rgba(255,90,0,0.38),
+    0 0 22px rgba(255,100,0,0.28),
+    inset 1px 1px 3px rgba(255,210,120,0.22);
 }
 
 .led.skipped {
@@ -251,6 +304,16 @@ body {
   border-color: #4a2c0a;
   box-shadow: 0 0 4px rgba(180,80,0,0.2);
 }
+
+/* Imperceptible loose-connection flicker on the middle step LED.
+   Two brief dips across a 13-second cycle — barely noticeable unless
+   you are listening closely and watching carefully. */
+@keyframes ledFlicker {
+  0%, 91.5%, 92.8%, 96.2%, 97.0%, 100% { opacity: 1; }
+  92%    { opacity: 0.74; }
+  96.6%  { opacity: 0.88; }
+}
+#led-1 { animation: ledFlicker 13s ease-in-out infinite; }
 
 
 /* Bottom bar */
@@ -324,6 +387,44 @@ body {
   top: -8px; left: -8px;
   width: 72px; height: 72px;
   pointer-events: none;
+}
+
+/* ── HARDWARE DETAILS ───────────────────────── */
+
+/* Panel corner screws — phillips head, slightly oxidized */
+.screw {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #2e2a1c, #181410 65%, #0e0c08);
+  border: 1px solid #201c10;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.75),
+    inset 0 0.5px 0 rgba(255,255,255,0.05);
+  z-index: 10;
+  pointer-events: none;
+}
+/* Phillips cross */
+.screw::before, .screw::after {
+  content: '';
+  position: absolute;
+  background: rgba(0,0,0,0.55);
+  border-radius: 1px;
+}
+.screw::before { width: 5px; height: 1.5px; top: 3.5px; left: 1.5px; }
+.screw::after  { width: 1.5px; height: 5px; top: 1.5px; left: 3.5px; }
+
+/* Ghost impression of a sticker removed long ago — just the adhesive outline */
+.sticker-ghost {
+  position: absolute;
+  width: 60px;
+  height: 22px;
+  border: 1px solid rgba(200,175,110,0.07);
+  background: rgba(210,185,120,0.025);
+  border-radius: 2px;
+  pointer-events: none;
+  box-shadow: inset 0 0 8px rgba(190,165,100,0.04);
 }
 
 /* Step mode toggle switch */
@@ -488,6 +589,18 @@ body {
 <body>
 
 <div class="machine">
+
+  <!-- Panel corner screws -->
+  <div class="screw" style="top:9px;left:9px"></div>
+  <div class="screw" style="top:9px;right:9px"></div>
+  <div class="screw" style="bottom:9px;left:9px"></div>
+  <div class="screw" style="bottom:9px;right:9px"></div>
+  <!-- Mid-panel screws on long edges -->
+  <div class="screw" style="top:9px;left:50%;transform:translateX(-50%)"></div>
+  <div class="screw" style="bottom:9px;left:50%;transform:translateX(-50%)"></div>
+
+  <!-- Ghost impression of a sticker removed long ago -->
+  <!-- <div class="sticker-ghost" style="bottom:28px;right:88px"></div> -->
 
   <!-- HEADER -->
   <div class="header">
@@ -1577,11 +1690,63 @@ function initSwitches() {
 }
 
 // ─────────────────────────────────────────────
+// PANEL SURFACE TEXTURE
+// Generates a randomised per-pixel noise texture once at load and applies
+// it as an absolutely-positioned overlay on the machine panel.
+// Uses mix-blend-mode: overlay so it interacts with the dark background
+// to create micro surface variation — imperceptible at a glance, felt as
+// material texture.
+// ─────────────────────────────────────────────
+function initPanelTexture() {
+  const SIZE = 192;
+  const src = document.createElement('canvas');
+  src.width = src.height = SIZE;
+  const ctx = src.getContext('2d');
+  const id = ctx.createImageData(SIZE, SIZE);
+  const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    // Weighted toward darker values — simulates brushed metal micro-scratches
+    // where most of the surface is dark and occasional bright flecks catch light
+    const r1 = Math.random(), r2 = Math.random();
+    const v = (r1 * r1 * r2 * 220 + 20) | 0;
+    d[i] = d[i+1] = d[i+2] = v;
+    d[i+3] = 255;
+  }
+  ctx.putImageData(id, 0, 0);
+
+  const machine = document.querySelector('.machine');
+  const mw = machine.offsetWidth || 1200;
+  const mh = machine.offsetHeight || 320;
+
+  const overlay = document.createElement('canvas');
+  overlay.width  = mw;
+  overlay.height = mh;
+  Object.assign(overlay.style, {
+    position:      'absolute',
+    inset:         '0',
+    width:         '100%',
+    height:        '100%',
+    pointerEvents: 'none',
+    zIndex:        '9999',
+    opacity:       '0.045',
+    mixBlendMode:  'overlay'
+  });
+
+  const octx = overlay.getContext('2d');
+  const pat  = octx.createPattern(src, 'repeat');
+  octx.fillStyle = pat;
+  octx.fillRect(0, 0, mw, mh);
+
+  machine.appendChild(overlay);
+}
+
+// ─────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────
 initKnobRings();
 initKnobs();
 initSwitches();
+initPanelTexture();
 </script>
 </body>
 </html>
