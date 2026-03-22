@@ -119,6 +119,7 @@ body {
 }
 
 .section-tempo { width: 130px; }
+.section-drift { width: 110px; }
 .section-filter { width: 160px; }
 .section-tube { width: 150px; }
 .section-lfo { width: 150px; }
@@ -397,6 +398,16 @@ body {
   .section-filter::before { left: 16px; transform: none; }
   .filter-row { gap: 16px; }
 
+  /* Drift row */
+  .section-drift {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 20px 12px;
+  }
+  .section-drift::before { left: 16px; transform: none; }
+
   /* Tube row */
   .section-tube {
     width: 100%;
@@ -464,6 +475,20 @@ body {
           </div>
         </div>
         <div class="knob-value" id="val-bpm">95</div>
+      </div>
+    </div>
+
+    <!-- DRIFT SECTION -->
+    <div class="section section-drift" data-label="DRIFT">
+      <div class="knob-group">
+        <div class="knob-label">DRIFT</div>
+        <div class="knob-wrap" id="wrap-oscDrift">
+          <svg class="knob-ring" id="ring-oscDrift" viewBox="0 0 72 72"></svg>
+          <div class="knob" id="knob-oscDrift" data-param="oscDrift" data-min="0" data-max="1" data-val="0.3">
+            <div class="knob-indicator" id="ind-oscDrift"></div>
+          </div>
+        </div>
+        <div class="knob-value" id="val-oscDrift">30%</div>
       </div>
     </div>
 
@@ -645,6 +670,7 @@ const params = {
   cutoff: 0.42,
   res: 0.38,
   glide: 0.55,
+  oscDrift: 0.3,
   lfoRate: 0.3,
   lfoDepth: 0.15,
   tubeDrive: 0.22,
@@ -668,6 +694,8 @@ let driftGain = null;
 let filterLFO = null;
 let filterLFOGain = null;
 let toneFilter = null;
+let driftValue = 0;   // random walk position in cents
+let driftTimer = null;
 
 // ─────────────────────────────────────────────
 // TUBE SATURATION CURVE
@@ -701,31 +729,13 @@ function initAudio() {
   if (audioCtx) return;
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  // Drift LFO — very slow sine modulating detune
-  driftLFO = audioCtx.createOscillator();
-  driftLFO.type = 'sine';
-  driftLFO.frequency.value = 0.07; // ~0.07 Hz, very slow
-  driftGain = audioCtx.createGain();
-  driftGain.gain.value = 4.5; // ±4.5 cents drift
-  driftLFO.connect(driftGain);
-  driftLFO.start();
-
-  // Randomly vary the drift LFO speed over time for organic feel
-  function nudgeDrift() {
-    if (!driftLFO) return;
-    const f = 0.04 + Math.random() * 0.08;
-    driftLFO.frequency.setTargetAtTime(f, audioCtx.currentTime, 3.0);
-    setTimeout(nudgeDrift, 4000 + Math.random() * 6000);
-  }
-  nudgeDrift();
-
   // Main oscillator — sawtooth
   osc = audioCtx.createOscillator();
   osc.type = 'sawtooth';
   osc.frequency.value = midiToHz(params.pitch0);
 
-  // Connect drift to detune
-  driftGain.connect(osc.detune);
+  // Start random walk drift — runs continuously, never resets
+  driftWalkTick();
 
   // Oscillator gain (amplitude envelope shaping via ramps)
   oscGain = audioCtx.createGain();
@@ -789,6 +799,35 @@ function updateFilterParams() {
   if (!filter) return;
   filter.frequency.setTargetAtTime(filterCutoffHz(), audioCtx.currentTime, 0.02);
   filter.Q.setTargetAtTime(filterQ(), audioCtx.currentTime, 0.02);
+}
+
+// ─────────────────────────────────────────────
+// OSCILLATOR RANDOM WALK DRIFT
+// ─────────────────────────────────────────────
+function driftWalkTick() {
+  if (!osc) return;
+
+  const amount = params.oscDrift;
+
+  // Max deviation in cents — exponential curve so low values are nearly
+  // imperceptible and the knob feels graduated across its full range.
+  // At 0: 0 ¢ · default 0.3: ~5 ¢ · 0.5: ~11 ¢ · 1.0: 32 ¢
+  const maxCents = Math.pow(amount, 1.5) * 32;
+
+  // Random walk step: direction chosen fresh each tick, size proportional to range.
+  // Center attraction: gentle restoring force prevents permanent runaway.
+  const step  = (Math.random() * 2 - 1) * maxCents * 0.35;
+  const pull  = 0.10; // attraction coefficient
+  driftValue  = driftValue * (1 - pull) + step;
+  driftValue  = Math.max(-maxCents, Math.min(maxCents, driftValue));
+
+  // Smooth the jump with setTargetAtTime — time constant slower at low drift
+  // so the movement always feels geological, never nervous.
+  const smoothTc = 0.5 + (1 - amount) * 1.0; // 0.5 s – 1.5 s
+  osc.detune.setTargetAtTime(driftValue, audioCtx.currentTime, smoothTc);
+
+  // Next tick: random interval in the 2–8 Hz band (125–500 ms)
+  driftTimer = setTimeout(driftWalkTick, 125 + Math.random() * 375);
 }
 
 // ─────────────────────────────────────────────
@@ -990,7 +1029,7 @@ function updateKnobVisual(id, val, min, max) {
 
 // Draw all tick rings
 function initKnobRings() {
-  const largeKnobs = ['bpm','pitch0','pitch1','pitch2'];
+  const largeKnobs = ['bpm','oscDrift','pitch0','pitch1','pitch2'];
   const allKnobs = [...largeKnobs, 'cutoff','res','glide','tubeDrive','tubeTone','lfoRate','lfoDepth'];
 
   allKnobs.forEach(id => {
@@ -1008,6 +1047,7 @@ function formatParam(param, val) {
   if (param === 'cutoff') return Math.round(filterCutoffHz()) + 'Hz';
   if (param === 'res') return filterQ().toFixed(1);
   if (param === 'glide') return glideTime().toFixed(2) + 's';
+  if (param === 'oscDrift') return Math.round(val * 100) + '%';
   if (param === 'lfoRate') return val.toFixed(2) + 'Hz';
   if (param === 'lfoDepth') return Math.round(val * 100) + '%';
   if (param === 'tubeDrive') return Math.round(val * 100) + '%';
@@ -1131,6 +1171,7 @@ function applyParam(param, val) {
   if (param === 'tubeTone' && toneFilter) {
     toneFilter.gain.setTargetAtTime(toneGainDb(), audioCtx.currentTime, 0.03);
   }
+  // oscDrift: driftWalkTick reads params.oscDrift live on each tick — no explicit action needed
   // BPM and pitch changes take effect on next scheduled step automatically
 }
 

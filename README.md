@@ -14,7 +14,7 @@ Three steps. Each step has a pitch. They loop. That's the whole idea.
 
 - **Oscillator** — sawtooth wave, the primary voice
 - **Portamento** — exponential glide between steps; weighted and gravitational, not snappy
-- **Drift** — a very slow LFO (~0.07 Hz) modulates the oscillator's detune by ±4.5 cents, with its own frequency randomized over time so the wander never repeats
+- **Drift** — a random walk algorithm wanders the oscillator pitch continuously and unpredictably; each tick takes a small random step with gentle center attraction to prevent permanent runaway; smoothed with a long time constant so movement feels geological rather than nervous; never resets on stop/start
 - **Filter** — resonant lowpass, cutoff mapped logarithmically from 80 Hz to 8 kHz
 - **Filter LFO** — free-running sine LFO modulates the filter cutoff additively; runs independently of the sequencer and never resets on stop/start
 - **Tube saturation** — asymmetric tanh WaveShaper with a small class-A bias, producing even harmonics at low drive and progressive compression at high drive; always active, never fully bypassed
@@ -28,6 +28,7 @@ Default pitches: **D3 → C3 → Bb2** — a descending minor motif in the bass 
 | Knob | Range | Effect |
 |------|-------|--------|
 | BPM | 40 – 180 | Sequence tempo (half-note steps) |
+| DRIFT | 0 – 100% | Oscillator random walk depth and speed; 30% default gives subtle but perceptible instability; 100% creates clear microtonal drift |
 | PITCH × 3 | C1 – C4 | Pitch for each step (chromatic, MIDI) |
 | CUTOFF | 80 Hz – 8 kHz | Filter cutoff frequency (logarithmic) |
 | RES | 0.5 – 20 | Filter resonance / Q |
