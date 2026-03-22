@@ -603,13 +603,12 @@ body {
     align-items: flex-start;
   }
 
-  /* Tape: full width, all knobs in one row */
+  /* Tape: full width, spread knobs evenly */
   .section-tape {
     flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px 10px;
-    padding: 18px 10px 12px;
+    justify-content: space-around;
+    align-items: center;
+    padding: 18px 4px 12px;
   }
   .section-tape::before { left: 10px; transform: none; }
   .section-tape .tape-row { display: contents; }
