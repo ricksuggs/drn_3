@@ -1263,8 +1263,8 @@ function lfoDepthHz() {
 // GLIDE HELPERS
 // ─────────────────────────────────────────────
 function glideTimeSecs() {
-  // 0 → 0.01s, 1 → 6s, exponential feel
-  return 0.01 + Math.pow(params.glideTime, 2.2) * 5.99;
+  // Glide as a fraction of the current step duration (0–100%)
+  return params.glideTime * stepDuration();
 }
 
 function blendedFreqAtTime(t) {
@@ -1296,7 +1296,7 @@ function scheduleStep(step, time) {
   const gt = glideTimeSecs();
   const shape = params.glideShape;
   const dur = stepDuration();
-  const glideDur = Math.min(gt, dur * 0.8);
+  const glideDur = gt;
 
   // Start frequency: analytically computed from the in-flight glide position
   // at `time`, so glides that interrupt a previous glide begin from the
@@ -1512,7 +1512,7 @@ function formatParam(param, val) {
   if (param.startsWith('pitch')) return midiToName(Math.round(val));
   if (param === 'cutoff') return Math.round(filterCutoffHz()) + 'Hz';
   if (param === 'res') return filterQ().toFixed(1);
-  if (param === 'glideTime') return glideTimeSecs().toFixed(2) + 's';
+  if (param === 'glideTime') return Math.round(val * 100) + '%';
   if (param === 'glideShape') {
     if (val < 0.02) return 'LIN';
     if (val > 0.98) return 'EXP';
